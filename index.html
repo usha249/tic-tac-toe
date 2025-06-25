@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe Game</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the game board */
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Beautiful gradient background */
+            background: linear-gradient(135deg, #2a2a4a, #1a1a3a, #0a0a2a);
+            background-size: 400% 400%;
+            animation: gradientAnimation 15s ease infinite;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Prevent scrolling */
+            transition: background-color 0.5s ease;
+        }
+
+        @keyframes gradientAnimation {
+            0% {background-position: 0% 50%;}
+            50% {background-position: 100% 50%;}
+            100% {background-position: 0% 50%;}
+        }
+
+        .game-container {
+            background-color: #2d3748; /* Slightly lighter dark background for container */
+            border-radius: 1.5rem; /* More rounded corners */
+            padding: 2.5rem;
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.6); /* Deeper, softer shadow */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 95%; /* Fluid width */
+            max-width: 450px; /* Max width for desktop */
+            transition: all 0.3s ease;
+            position: relative; /* For absolute positioning of elements */
+        }
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 0.75rem; /* Larger gap between cells */
+            width: 100%;
+            aspect-ratio: 1 / 1; /* Make the board square */
+            opacity: 0; /* Hidden initially */
+            transform: scale(0.9); /* Slightly scaled down initially */
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .game-board.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .cell {
+            width: 100%;
+            height: 100%;
+            background-color: #3b455b; /* Slightly darker cell background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 4.5rem; /* Even larger font size for X/O */
+            font-weight: 800; /* Extra bold */
+            cursor: pointer;
+            border-radius: 0.75rem; /* More rounded corners for cells */
+            transition: background-color 0.3s ease, transform 0.1s ease, color 0.3s ease; /* Smooth transition */
+            color: #cbd5e0; /* Light text color */
+            user-select: none; /* Prevent text selection */
+        }
+        .cell:hover:not(.occupied):not(.winning-cell) {
+            background-color: #525f7a; /* Darker hover effect */
+            transform: scale(1.05); /* More pronounced scale on hover */
+        }
+        .cell.occupied {
+            cursor: not-allowed;
+        }
+        .cell.X {
+            color: #4299e1; /* Blue for X */
+        }
+        .cell.O {
+            color: #f6ad55; /* Orange for O */
+        }
+        .cell.winning-cell {
+            background-color: #48bb78; /* Green for winning cells */
+            color: white;
+            animation: pulse 1s infinite alternate; /* Pulse animation for winning cells */
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 10px rgba(72, 187, 120, 0.5); }
+            100% { transform: scale(1.08); box-shadow: 0 0 20px rgba(72, 187, 120, 0.8); }
+        }
+
+        .status-display {
+            font-size: 1.8rem; /* Larger status font */
+            font-weight: bold;
+            margin-bottom: 2rem;
+            color: #e2e8f0; /* Lighter text color */
+            text-align: center;
+        }
+        .action-button {
+            padding: 0.9rem 2rem;
+            font-size: 1.3rem;
+            background: linear-gradient(145deg, #63b3ed, #4299e1); /* Gradient blue */
+            color: white;
+            border: none;
+            border-radius: 0.85rem; /* More rounded */
+            cursor: pointer;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.4); /* Subtle shadow */
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease;
+            margin-top: 2rem;
+            outline: none; /* Remove outline on focus */
+        }
+        .action-button:hover {
+            transform: translateY(-3px); /* Lift effect on hover */
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(145deg, #4299e1, #3182ce); /* Darker gradient on hover */
+        }
+        .action-button:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .name-input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            width: 100%;
+            margin-bottom: 2rem;
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .name-input-section.hidden {
+            opacity: 0;
+            transform: scale(0.9);
+            height: 0;
+            overflow: hidden;
+            margin-bottom: 0;
+            padding: 0;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .input-group label {
+            color: #cbd5e0;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        .input-group input {
+            background-color: #3b455b;
+            border: 2px solid #4a5568;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            font-size: 1.1rem;
+            color: #e2e8f0;
+            outline: none;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .input-group input:focus {
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .game-container {
+                padding: 1.5rem;
+                border-radius: 1rem;
+            }
+            .cell {
+                font-size: 3.5rem; /* Smaller font for mobile */
+            }
+            .status-display {
+                font-size: 1.4rem;
+                margin-bottom: 1.5rem;
+            }
+            .action-button {
+                font-size: 1.1rem;
+                padding: 0.75rem 1.5rem;
+                margin-top: 1.5rem;
+            }
+            .name-input-section {
+                gap: 1rem;
+                margin-bottom: 1.5rem;
+            }
+            .input-group label {
+                font-size: 1rem;
+            }
+            .input-group input {
+                font-size: 1rem;
+                padding: 0.6rem 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Player Name Input Section -->
+        <div id="nameInputSection" class="name-input-section">
+            <h2 class="text-2xl font-bold text-white mb-4 text-center">Enter Player Names</h2>
+            <div class="input-group">
+                <label for="playerXNameInput">Player X Name:</label>
+                <input type="text" id="playerXNameInput" placeholder="e.g., Player One">
+            </div>
+            <div class="input-group">
+                <label for="playerONameInput">Player O Name:</label>
+                <input type="text" id="playerONameInput" placeholder="e.g., Player Two">
+            </div>
+            <button id="startGameButton" class="action-button">Start Game</button>
+        </div>
+
+        <!-- Game Board and Status Section -->
+        <div id="gameSection" class="w-full flex flex-col items-center">
+            <div id="status" class="status-display"></div>
+            <div class="game-board" id="gameBoard">
+                <!-- Cells will be dynamically generated by JavaScript -->
+            </div>
+            <button id="resetButton" class="action-button">Reset Game</button>
+        </div>
+    </div>
+
+    <script>
+        // Get references to DOM elements
+        const gameBoard = document.getElementById('gameBoard');
+        const statusDisplay = document.getElementById('status');
+        const resetButton = document.getElementById('resetButton');
+        const nameInputSection = document.getElementById('nameInputSection');
+        const playerXNameInput = document.getElementById('playerXNameInput');
+        const playerONameInput = document.getElementById('playerONameInput');
+        const startGameButton = document.getElementById('startGameButton');
+        const gameSection = document.getElementById('gameSection'); // New container for game elements
+
+        // Game state variables
+        let board = ['', '', '', '', '', '', '', '', '']; // Represents the 3x3 board
+        let currentPlayer = 'X'; // Current player, starts with X
+        let gameActive = false; // True if the game is ongoing
+        let playerXName = 'Player X'; // Default name for Player X
+        let playerOName = 'Player O'; // Default name for Player O
+
+        // Winning conditions (indices of cells that form a win)
+        const winningConditions = [
+            [0, 1, 2], // Row 1
+            [3, 4, 5], // Row 2
+            [6, 7, 8], // Row 3
+            [0, 3, 6], // Column 1
+            [1, 4, 7], // Column 2
+            [2, 5, 8], // Column 3
+            [0, 4, 8], // Diagonal 1
+            [2, 4, 6]  // Diagonal 2
+        ];
+
+        /**
+         * Initializes the game by setting up the initial UI state (showing name inputs).
+         * This function is called on window load or when resetting to the start screen.
+         */
+        function setupGameStartScreen() {
+            // Reset game state
+            board = ['', '', '', '', '', '', '', '', ''];
+            currentPlayer = 'X';
+            gameActive = false;
+
+            // Hide game elements and show name input
+            gameBoard.classList.remove('active'); // Animate out
+            gameBoard.innerHTML = ''; // Clear cells
+            resetButton.style.display = 'none';
+            statusDisplay.textContent = ''; // Clear status message
+
+            nameInputSection.classList.remove('hidden'); // Show name input with animation
+            startGameButton.style.display = 'block';
+
+            // Reset input fields
+            playerXNameInput.value = '';
+            playerONameInput.value = '';
+
+            // Ensure game section is visible but board is not
+            gameSection.classList.add('flex');
+            gameSection.classList.remove('hidden');
+        }
+
+        /**
+         * Starts the game after player names are entered.
+         * Hides name input, sets player names, and initializes the board UI.
+         */
+        function startGame() {
+            // Get player names from input fields, use defaults if empty
+            playerXName = playerXNameInput.value.trim() || 'Player X';
+            playerOName = playerONameInput.value.trim() || 'Player O';
+
+            // Hide name input section and show game board
+            nameInputSection.classList.add('hidden'); // Animate out
+            startGameButton.style.display = 'none';
+            resetButton.style.display = 'block';
+
+            // Set game state to active
+            gameActive = true;
+            initializeBoardUI(); // Create cells for the board
+            gameBoard.classList.add('active'); // Animate in the board
+            displayMessage(`${playerXName}'s Turn`); // Initial message with player name
+        }
+
+        /**
+         * Creates and appends 9 cells to the gameBoard element.
+         * Each cell is given a data-cell-index attribute and a click event listener.
+         */
+        function initializeBoardUI() {
+            gameBoard.innerHTML = ''; // Clear existing cells
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.dataset.cellIndex = i; // Store index
+                cell.addEventListener('click', handleCellClick);
+                gameBoard.appendChild(cell);
+            }
+        }
+
+        /**
+         * Displays a message in the status display area.
+         * @param {string} message - The message to be displayed.
+         */
+        function displayMessage(message) {
+            statusDisplay.textContent = message;
+        }
+
+        /**
+         * Handles a click event on a game cell.
+         * @param {Event} event - The click event object.
+         */
+        function handleCellClick(event) {
+            if (!gameActive || event.target.textContent !== '') {
+                return; // Do nothing if game is not active or cell is occupied
+            }
+
+            const clickedCell = event.target;
+            const clickedCellIndex = parseInt(clickedCell.dataset.cellIndex);
+
+            // Update the board array and the cell's content
+            board[clickedCellIndex] = currentPlayer;
+            clickedCell.textContent = currentPlayer;
+            clickedCell.classList.add('occupied', currentPlayer); // Add occupied and player class for styling
+
+            if (checkWin()) {
+                const winnerName = currentPlayer === 'X' ? playerXName : playerOName;
+                displayMessage(`${winnerName} Wins!`);
+                gameActive = false; // End the game
+                highlightWinningCells(); // Highlight the winning line
+                return;
+            }
+
+            if (checkDraw()) {
+                displayMessage('It\'s a Draw!');
+                gameActive = false; // End the game
+                return;
+            }
+
+            // If no win or draw, switch to the next player
+            switchPlayer();
+            const nextPlayerName = currentPlayer === 'X' ? playerXName : playerOName;
+            displayMessage(`${nextPlayerName}'s Turn`);
+        }
+
+        /**
+         * Checks if the current player has won the game.
+         * @returns {boolean} True if the current player has won, false otherwise.
+         */
+        let winningLine = []; // Store the winning line for highlighting
+        function checkWin() {
+            for (let i = 0; i < winningConditions.length; i++) {
+                const condition = winningConditions[i];
+                const [a, b, c] = condition;
+                if (board[a] === currentPlayer && board[b] === currentPlayer && board[c] === currentPlayer) {
+                    winningLine = condition; // Store the winning line
+                    return true;
+                }
+            }
+            winningLine = []; // Reset if no win
+            return false;
+        }
+
+        /**
+         * Highlights the cells that form the winning line.
+         */
+        function highlightWinningCells() {
+            winningLine.forEach(index => {
+                const cell = gameBoard.children[index];
+                cell.classList.add('winning-cell');
+            });
+        }
+
+        /**
+         * Checks if the game is a draw.
+         * @returns {boolean} True if it's a draw, false otherwise.
+         */
+        function checkDraw() {
+            return board.every(cell => cell !== '');
+        }
+
+        /**
+         * Switches the current player.
+         */
+        function switchPlayer() {
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        }
+
+        /**
+         * Resets the game to its initial state, allowing new player names.
+         */
+        function resetGame() {
+            setupGameStartScreen(); // Go back to the name input screen
+        }
+
+        // Add event listeners
+        startGameButton.addEventListener('click', startGame);
+        resetButton.addEventListener('click', resetGame);
+
+        // Initialize the game when the script loads by showing the start screen
+        window.onload = setupGameStartScreen;
+    </script>
+</body>
+</html>
